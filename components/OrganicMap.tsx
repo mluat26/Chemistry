@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { OrganicCompound, OrganicReaction, QuizQuestion } from '../types';
+import { OrganicCompound, OrganicReaction } from '../types';
 import { DB } from '../utils/db';
-import { generateOrganicPractice, toSubscript } from '../services/geminiService';
-import { FlaskConical, Flame, RefreshCcw, ArrowRight, Zap, CheckCircle2, XCircle, Beaker, X, TestTube, Plus, Trash2, Save, BrainCircuit } from 'lucide-react';
+import { toSubscript } from '../services/geminiService';
+import { FlaskConical, Flame, RefreshCcw, ArrowRight, Zap, Beaker, X, TestTube, Plus, Trash2, Save } from 'lucide-react';
 
 export const OrganicMap: React.FC = () => {
   // --- STATE ---
@@ -10,22 +10,6 @@ export const OrganicMap: React.FC = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedReaction, setSelectedReaction] = useState<OrganicReaction | null>(null);
   
-  // Practice Mode
-  const [isPracticeMode, setIsPracticeMode] = useState(false);
-  
-  // Old Local Practice State (Fallback)
-  const [localQuestion, setLocalQuestion] = useState<{
-      targetReaction: OrganicReaction;
-      compoundName: string;
-      options: OrganicReaction[];
-  } | null>(null);
-  
-  // New AI Quiz State
-  const [aiQuestion, setAiQuestion] = useState<QuizQuestion | null>(null);
-  const [practiceLoading, setPracticeLoading] = useState(false);
-  const [practiceFeedback, setPracticeFeedback] = useState<'correct' | 'wrong' | null>(null);
-  const [isAiMode, setIsAiMode] = useState(false);
-
   // Add Mode
   const [isAdding, setIsAdding] = useState(false);
   const [newCompound, setNewCompound] = useState<Partial<OrganicCompound>>({
@@ -61,71 +45,6 @@ export const OrganicMap: React.FC = () => {
         case 'Oxi hóa': return <FlaskConical className="w-5 h-5 text-pink-500" />;
         default: return <Beaker className="w-5 h-5 text-blue-500" />;
     }
-  };
-
-  // --- LOGIC: PRACTICE ---
-  
-  const startPractice = async () => {
-      if (data.length === 0) return;
-      
-      setIsPracticeMode(true);
-      setPracticeFeedback(null);
-      
-      const hasKey = !!localStorage.getItem('GEMINI_API_KEY');
-      const randomCompound = data[Math.floor(Math.random() * data.length)];
-
-      if (hasKey) {
-          // AI Mode
-          setIsAiMode(true);
-          setPracticeLoading(true);
-          setAiQuestion(null);
-          try {
-              const q = await generateOrganicPractice(randomCompound.name);
-              setAiQuestion(q);
-          } catch (e) {
-              console.error("AI Fail, fallback local", e);
-              setIsAiMode(false);
-              startLocalPractice(randomCompound);
-          } finally {
-              setPracticeLoading(false);
-          }
-      } else {
-          // Local Mode
-          setIsAiMode(false);
-          startLocalPractice(randomCompound);
-      }
-  };
-
-  const startLocalPractice = (randomCompound: OrganicCompound) => {
-      if (!randomCompound.reactions || randomCompound.reactions.length === 0) {
-          // Retry with another compound if empty
-          const next = data.find(c => c.id !== randomCompound.id && c.reactions.length > 0);
-          if(next) startLocalPractice(next);
-          else alert("Chưa đủ dữ liệu để luyện tập.");
-          return;
-      }
-
-      const randomReaction = randomCompound.reactions[Math.floor(Math.random() * randomCompound.reactions.length)];
-      
-      // Get wrong options
-      const allReactions = data.flatMap(c => c.reactions);
-      const wrongOptions = allReactions
-          .filter(r => r.equation !== randomReaction.equation)
-          .sort(() => 0.5 - Math.random())
-          .slice(0, 3); // 3 wrong + 1 correct = 4
-          
-      const options = [randomReaction, ...wrongOptions].sort(() => 0.5 - Math.random());
-      setLocalQuestion({ targetReaction: randomReaction, compoundName: randomCompound.name, options: options });
-  };
-
-  const checkAnswer = (idx: number, equationOrOption: string) => {
-      if (isAiMode && aiQuestion) {
-          if (idx === aiQuestion.correctAnswer) setPracticeFeedback('correct');
-          else setPracticeFeedback('wrong');
-      } else if (localQuestion) {
-          if (equationOrOption === localQuestion.targetReaction.equation) setPracticeFeedback('correct');
-          else setPracticeFeedback('wrong');
-      }
   };
 
   // --- LOGIC: ADD NEW COMPOUND ---
@@ -336,137 +255,6 @@ export const OrganicMap: React.FC = () => {
       );
   }
 
-  // --- RENDER: PRACTICE (AI & LOCAL) ---
-  if (isPracticeMode) {
-      if (practiceLoading) {
-          return (
-              <div className="bg-white rounded-2xl shadow-xl p-6 border-2 border-indigo-100 flex flex-col items-center justify-center min-h-[300px]">
-                  <BrainCircuit className="w-16 h-16 text-indigo-300 animate-pulse mb-4" />
-                  <p className="font-bold text-indigo-600">AI đang soạn câu hỏi...</p>
-              </div>
-          );
-      }
-
-      // AI Mode Render
-      if (isAiMode && aiQuestion) {
-          return (
-              <div className="bg-white rounded-2xl shadow-xl p-6 border-2 border-indigo-100 animate-fade-in pb-20">
-                  <div className="mb-6">
-                      <span className="bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded mb-2 inline-block">AI Question</span>
-                      <h3 className="text-lg font-bold text-slate-800 leading-relaxed">{toSubscript(aiQuestion.question)}</h3>
-                  </div>
-                  
-                  <div className="space-y-3">
-                      {aiQuestion.options.map((opt, idx) => (
-                          <button
-                              key={idx}
-                              onClick={() => checkAnswer(idx, opt)}
-                              disabled={practiceFeedback !== null}
-                              className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
-                                  practiceFeedback === 'correct' && idx === aiQuestion.correctAnswer
-                                  ? 'bg-green-100 border-green-500 text-green-900'
-                                  : practiceFeedback === 'wrong' && idx !== aiQuestion.correctAnswer && practiceFeedback !== null // Visual cue for disabled
-                                  ? 'opacity-40 bg-gray-50'
-                                  : 'bg-white hover:bg-gray-50 border-gray-200'
-                              } ${practiceFeedback === 'wrong' && idx === (aiQuestion.options.indexOf(opt)) ? 'bg-red-100 border-red-200' : ''}`}
-                          >
-                              <span className="font-bold text-gray-500 mr-2">{String.fromCharCode(65+idx)}.</span>
-                              <span className="font-medium text-slate-800">{toSubscript(opt)}</span>
-                          </button>
-                      ))}
-                  </div>
-
-                  {practiceFeedback === 'correct' && (
-                      <div className="mt-6 text-center animate-bounce">
-                          <div className="text-green-600 font-bold text-xl flex items-center justify-center gap-2">
-                              <CheckCircle2 /> Chính xác!
-                          </div>
-                          <p className="text-sm text-gray-600 mt-2 bg-green-50 p-2 rounded">{toSubscript(aiQuestion.explanation)}</p>
-                          <button onClick={startPractice} className="mt-4 w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 shadow-lg">Câu tiếp theo →</button>
-                      </div>
-                  )}
-                  {practiceFeedback === 'wrong' && (
-                      <div className="mt-6 text-center">
-                           <div className="text-red-500 font-bold text-lg flex items-center justify-center gap-2 mb-4">
-                              <XCircle /> Chưa đúng rồi.
-                          </div>
-                          <button onClick={startPractice} className="text-gray-400 font-bold hover:text-gray-600">Bỏ qua</button>
-                      </div>
-                  )}
-                   <button onClick={() => setIsPracticeMode(false)} className="mt-8 w-full py-3 text-gray-400 font-bold hover:text-gray-600 border-t">Thoát</button>
-              </div>
-          );
-      }
-
-      // Fallback Local Mode Render
-      if (!isAiMode && localQuestion) {
-          return (
-              <div className="bg-white rounded-2xl shadow-xl p-6 border-2 border-indigo-100 animate-fade-in pb-20">
-                  <div className="text-center mb-6">
-                      <h3 className="text-xl font-bold text-slate-700 mb-2">Thử Thách (Chế độ Cơ bản)</h3>
-                      <p className="text-base text-gray-600">
-                          Từ <span className="font-bold text-blue-600 text-lg">{localQuestion.compoundName}</span>, 
-                          hãy chọn phương trình cho phản ứng:
-                      </p>
-                      <div className="bg-indigo-50 p-4 rounded-xl mt-3 border border-indigo-200 text-indigo-900 font-medium italic break-words">
-                          "{toSubscript(localQuestion.targetReaction.description)}"
-                      </div>
-                  </div>
-    
-                  <div className="grid gap-4">
-                      {localQuestion.options.map((opt, idx) => (
-                          <button 
-                              key={idx}
-                              onClick={() => checkAnswer(idx, opt.equation)}
-                              disabled={practiceFeedback !== null}
-                              className={`p-4 rounded-xl border-2 text-left transition-all ${
-                                  practiceFeedback === 'correct' && opt.equation === localQuestion.targetReaction.equation
-                                  ? 'bg-green-100 border-green-500 text-green-900'
-                                  : practiceFeedback === 'wrong' && opt.equation !== localQuestion.targetReaction.equation
-                                  ? 'opacity-40'
-                                  : 'bg-white hover:bg-gray-50 border-gray-200 shadow-sm active:scale-[0.98]'
-                              }`}
-                          >
-                              <div className="font-bold flex items-center gap-3">
-                                  <div className="p-2 bg-white rounded-lg shadow-sm border shrink-0">{getActionIcon(opt.action)}</div>
-                                  <div className="min-w-0">
-                                    <span className="block">{opt.action}</span>
-                                    <span className="text-xs font-normal text-gray-500 truncate block">{toSubscript(opt.equation)}</span>
-                                  </div>
-                              </div>
-                          </button>
-                      ))}
-                  </div>
-    
-                  {practiceFeedback === 'correct' && (
-                      <div className="mt-6 text-center animate-bounce">
-                          <div className="text-green-600 font-bold text-xl flex items-center justify-center gap-2">
-                              <CheckCircle2 /> Chính xác!
-                          </div>
-                          <button onClick={startPractice} className="mt-6 w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 shadow-lg">Câu tiếp theo →</button>
-                      </div>
-                  )}
-                   {practiceFeedback === 'wrong' && (
-                      <div className="mt-6 text-center">
-                          <div className="text-red-500 font-bold text-lg flex items-center justify-center gap-2 mb-4">
-                              <XCircle /> Sai rồi, thử lại nhé!
-                          </div>
-                          <button onClick={startPractice} className="text-gray-400 font-bold hover:text-gray-600">Bỏ qua câu này</button>
-                      </div>
-                  )}
-    
-                  <button 
-                      onClick={() => setIsPracticeMode(false)}
-                      className="mt-8 w-full py-3 text-gray-400 font-bold hover:text-gray-600 border-t"
-                  >
-                      Thoát luyện tập
-                  </button>
-              </div>
-          );
-      }
-      return null;
-  }
-
   // --- RENDER: MAIN VIEW ---
   if (data.length === 0) {
       return (
@@ -501,12 +289,7 @@ export const OrganicMap: React.FC = () => {
             >
                 <Plus size={20} />
             </button>
-            <button 
-                onClick={startPractice}
-                className="bg-indigo-600 text-white px-4 py-2 rounded-full text-sm font-bold hover:bg-indigo-700 transition-colors shadow-lg active:scale-95 flex items-center gap-1"
-            >
-                <BrainCircuit size={16} /> Luyện tập
-            </button>
+            {/* REMOVED PRACTICE BUTTON */}
           </div>
       </div>
       

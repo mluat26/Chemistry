@@ -1,12 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ChemicalComponent, ElementType, Valence } from '../types';
 import { DB } from '../utils/db';
-import { FlaskConical, ChevronDown, Trash2, Atom, Zap, X, BookOpen, Copy, ArrowLeft, Upload, RefreshCw, Scale, Info } from 'lucide-react';
+import { lookupChemicalWithAI } from '../services/geminiService';
+import { FlaskConical, ChevronDown, Trash2, Atom, Zap, X, BookOpen, Copy, ArrowLeft, Upload, RefreshCw, Scale, Info, Sparkles } from 'lucide-react';
 
 export const ValenceTable: React.FC = () => {
   const [input, setInput] = useState('');
   const [quickAddInput, setQuickAddInput] = useState('');
   const [isManageMode, setIsManageMode] = useState(false);
+  const [isSearchingAI, setIsSearchingAI] = useState(false);
   
   // Data State
   const [data, setData] = useState<ChemicalComponent[]>([]);
@@ -14,6 +16,9 @@ export const ValenceTable: React.FC = () => {
   
   // Detail Modal State
   const [selectedItem, setSelectedItem] = useState<ChemicalComponent | null>(null);
+
+  // Check for API Key presence for the UI
+  const hasApiKey = !!localStorage.getItem('GEMINI_API_KEY');
 
   // Load from DB
   const loadData = async () => {
@@ -77,6 +82,39 @@ export const ValenceTable: React.FC = () => {
   const handleCopyData = () => {
       navigator.clipboard.writeText(JSON.stringify(data, null, 2));
       alert("Đã sao chép toàn bộ dữ liệu (JSON) vào bộ nhớ tạm!");
+  };
+
+  // AI ADD HANDLER
+  const handleAIAdd = async () => {
+      if (!input.trim() || isSearchingAI) return;
+      
+      setIsSearchingAI(true);
+      try {
+          // Response is now { data: ..., usage: number }
+          const response = await lookupChemicalWithAI(input);
+          
+          if (response.data) {
+              await DB.addValence(response.data);
+              await loadData(); // Reload to include new item
+              setSelectedItem(response.data); // Open detail view
+              setInput(''); 
+              
+              if (response.usage > 0) {
+                 // Non-blocking toast could be better, but simple alert for now per request for "estimator"
+                 // Or just log it. Let's append it to the item note temporarily or just rely on the Settings dashboard.
+                 // Actually, let's use a console log or a transient UI state if we had a toast system.
+                 // For now, I'll rely on the Dashboard, but maybe show it in the detail view?
+                 // No, let's just use console.
+                 console.log(`Used ${response.usage} tokens.`);
+              }
+          } else {
+              alert("AI không tìm thấy thông tin hoặc chất này không tồn tại.");
+          }
+      } catch (e) {
+          alert("Có lỗi xảy ra khi gọi AI.");
+      } finally {
+          setIsSearchingAI(false);
+      }
   };
 
   const parseAndAdd = async () => {
@@ -376,8 +414,31 @@ export const ValenceTable: React.FC = () => {
                     <span className="text-xs font-bold text-gray-400 uppercase">Kết quả ({results.length})</span>
                 </div>
                 {results.length > 0 ? renderList(results) : (
-                    <div className="text-center py-10 opacity-50 bg-gray-50 rounded-2xl border-2 border-dashed">
-                        <p>Không tìm thấy chất nào.</p>
+                    <div className="text-center py-10 opacity-50 bg-gray-50 rounded-2xl border-2 border-dashed flex flex-col items-center gap-4 transition-all">
+                        <p>Không tìm thấy.</p>
+                        
+                        {/* AI ADD BUTTON */}
+                        {hasApiKey && (
+                            <button 
+                                onClick={handleAIAdd}
+                                disabled={isSearchingAI}
+                                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl active:scale-95 transition-all disabled:opacity-50"
+                            >
+                                {isSearchingAI ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                        Đang hỏi AI...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Sparkles size={18} /> Thêm "{input}" bằng AI
+                                    </>
+                                )}
+                            </button>
+                        )}
+                        {!hasApiKey && (
+                             <p className="text-xs text-gray-400 max-w-xs">Nhập API Key trong Cài đặt để AI tự động thêm chất này cho bạn.</p>
+                        )}
                     </div>
                 )}
             </>

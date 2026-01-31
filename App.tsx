@@ -4,7 +4,8 @@ import { ValenceTable } from './components/ValenceTable';
 import { OrganicMap } from './components/OrganicMap';
 import { AITutor } from './components/AITutor';
 import { DB } from './utils/db';
-import { Search, FlaskConical, Bot, Settings, Key, X, Check, MessageSquare, Trash2, HardDrive, Link as LinkIcon, Cpu } from 'lucide-react';
+import { getUsageStats, UsageStats } from './services/geminiService';
+import { Search, FlaskConical, Bot, Settings, Key, X, Check, MessageSquare, Trash2, HardDrive, Link as LinkIcon, Cpu, Zap, Activity } from 'lucide-react';
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('TABLE');
@@ -16,6 +17,9 @@ const App: React.FC = () => {
   
   // Storage State
   const [storageUsage, setStorageUsage] = useState<{usage: number, quota: number} | null>(null);
+  
+  // API Usage State
+  const [apiStats, setApiStats] = useState<UsageStats | null>(null);
 
   useEffect(() => {
     setApiKey(localStorage.getItem('GEMINI_API_KEY') || '');
@@ -24,15 +28,21 @@ const App: React.FC = () => {
     setCustomPrompt(localStorage.getItem('GEMINI_CUSTOM_PROMPT') || '');
   }, []);
 
-  // Fetch Storage Estimate when Settings open
+  // Fetch Data when Settings open
   useEffect(() => {
-      if (showSettings && navigator.storage && navigator.storage.estimate) {
-          navigator.storage.estimate().then(estimate => {
-              setStorageUsage({
-                  usage: estimate.usage || 0,
-                  quota: estimate.quota || 0
-              });
-          }).catch(err => console.error("Storage estimate error:", err));
+      if (showSettings) {
+          // 1. Storage
+          if(navigator.storage && navigator.storage.estimate) {
+            navigator.storage.estimate().then(estimate => {
+                setStorageUsage({
+                    usage: estimate.usage || 0,
+                    quota: estimate.quota || 0
+                });
+            }).catch(err => console.error("Storage estimate error:", err));
+          }
+
+          // 2. API Usage
+          setApiStats(getUsageStats());
       }
   }, [showSettings]);
 
@@ -55,6 +65,7 @@ const App: React.FC = () => {
   const handleGlobalReset = async () => {
       if (window.confirm("⚠️ CẢNH BÁO: Hành động này sẽ xóa toàn bộ dữ liệu bạn đã thêm và đưa về trạng thái gốc.\n\nBạn có chắc chắn không?")) {
           await DB.resetData();
+          localStorage.removeItem('GEMINI_USAGE_STATS'); // Also reset stats
           alert("Dữ liệu đã được khôi phục về mặc định.");
           window.location.reload(); 
       }
@@ -71,45 +82,57 @@ const App: React.FC = () => {
   const Tab = ({ target, icon: Icon, label }: { target: ViewState; icon: any; label: string }) => (
      <button 
         onClick={() => setView(target)}
-        className={`flex-1 py-4 flex flex-col items-center justify-center gap-1 transition-colors border-b-4 ${
+        className={`flex-1 py-3 flex flex-col items-center justify-center gap-1 transition-colors border-b-4 ${
             view === target 
             ? 'border-blue-600 text-blue-800 bg-blue-50' 
             : 'border-transparent text-gray-500 hover:text-blue-600 hover:bg-gray-50'
         }`}
      >
-         <Icon size={20} className={view === target ? "fill-current" : ""} />
-         <span className="text-sm font-bold uppercase tracking-wide">{label}</span>
+         <Icon size={18} className={view === target ? "fill-current" : ""} />
+         <span className="text-[11px] font-bold uppercase tracking-wider">{label}</span>
      </button>
   );
 
+  // Layout Logic:
+  // - AI_TUTOR: Full width (w-full), no max-width limit, no padding constraints.
+  // - Others: Max width for readability, centered.
+  const isAI = view === 'AI_TUTOR';
+  // Note: 'mx-auto' keeps content centered when max-width is applied
+  const containerClass = isAI ? 'w-full' : 'max-w-xl mx-auto';
+  const mainPadding = isAI ? 'p-0' : 'p-4';
+
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center">
+    <div className="min-h-screen bg-gray-50 flex flex-col transition-all duration-300">
       
-      {/* Header */}
-      <header className="w-full bg-white shadow-sm sticky top-0 z-10 max-w-xl mx-auto">
-        <div className="flex justify-between items-center p-4">
-             <div className="flex items-center gap-2">
-                <h1 className="font-extrabold text-xl text-blue-600 tracking-tight">Hóa Học 9</h1>
-                <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded">Vui Học</span>
-             </div>
-             <button 
-                onClick={() => setShowSettings(true)}
-                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
-             >
-                <Settings size={20} />
-             </button>
-        </div>
+      {/* Header Container - Always Full Width Background */}
+      <header className="w-full bg-white shadow-sm sticky top-0 z-10">
         
-        {/* Simple Tabs */}
-        <div className="flex border-t border-gray-100">
-           <Tab target="TABLE" icon={Search} label="Tra Hóa Trị" />
-           <Tab target="ORGANIC" icon={FlaskConical} label="Hữu Cơ" />
-           <Tab target="AI_TUTOR" icon={Bot} label="Gia Sư AI" />
+        {/* Header Content - Constrained Width based on View */}
+        <div className={`transition-all duration-300 ${containerClass}`}>
+            <div className="flex justify-between items-center px-4 py-3">
+                 <div className="flex items-center gap-2">
+                    <h1 className="font-extrabold text-lg text-blue-600 tracking-tight">Hóa Học 9</h1>
+                    <span className="text-[9px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">Vui Học</span>
+                 </div>
+                 <button 
+                    onClick={() => setShowSettings(true)}
+                    className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                 >
+                    <Settings size={18} />
+                 </button>
+            </div>
+            
+            {/* Simple Tabs - Reduced height */}
+            <div className="flex border-t border-gray-100">
+               <Tab target="TABLE" icon={Search} label="Tra Hóa Trị" />
+               <Tab target="ORGANIC" icon={FlaskConical} label="Hữu Cơ" />
+               <Tab target="AI_TUTOR" icon={Bot} label="Gia Sư AI" />
+            </div>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <main className="w-full max-w-xl p-4 flex-1">
+      <main className={`w-full flex-1 transition-all duration-300 ${containerClass} ${mainPadding}`}>
           {view === 'TABLE' && <ValenceTable />}
           {view === 'ORGANIC' && <OrganicMap />}
           {view === 'AI_TUTOR' && <AITutor />}
@@ -146,20 +169,41 @@ const App: React.FC = () => {
                      ) : (
                          <p className="text-xs text-gray-400">Đang tính toán...</p>
                      )}
-                     <button 
-                        onClick={handleGlobalReset}
-                        className="mt-4 w-full py-2 bg-white border border-red-200 text-red-600 rounded-lg text-xs font-bold hover:bg-red-50 flex items-center justify-center gap-2"
-                     >
-                         <Trash2 size={14} /> Xóa toàn bộ dữ liệu & Reset
-                     </button>
                  </div>
+
+                 {/* API STATS SECTION */}
+                 {apiStats && apiStats.totalRequests > 0 && (
+                     <div className="bg-orange-50 p-4 rounded-xl border border-orange-200">
+                         <h4 className="flex items-center gap-2 font-bold text-orange-800 mb-3">
+                            <Activity size={16} className="text-orange-600"/> Thống kê API
+                         </h4>
+                         <div className="grid grid-cols-2 gap-4 text-center">
+                             <div className="bg-white p-2 rounded-lg border border-orange-100 shadow-sm">
+                                 <div className="text-xs text-gray-400 font-bold uppercase">Requests</div>
+                                 <div className="text-xl font-black text-orange-600">{apiStats.totalRequests}</div>
+                             </div>
+                             <div className="bg-white p-2 rounded-lg border border-orange-100 shadow-sm">
+                                 <div className="text-xs text-gray-400 font-bold uppercase">Tokens</div>
+                                 <div className="text-xl font-black text-orange-600">{apiStats.totalTokens.toLocaleString()}</div>
+                             </div>
+                         </div>
+                         <div className="mt-3 space-y-2">
+                             {Object.entries(apiStats.modelStats).map(([model, stats]: [string, any]) => (
+                                 <div key={model} className="flex justify-between items-center text-xs border-t border-orange-100 pt-2">
+                                     <span className="font-mono text-gray-600 font-bold">{model}</span>
+                                     <span className="text-gray-500">{stats.requests} req / {stats.tokens.toLocaleString()} tok</span>
+                                 </div>
+                             ))}
+                         </div>
+                     </div>
+                 )}
 
                  <hr className="border-gray-100" />
 
-                 {/* API SECTION */}
+                 {/* API CONFIG SECTION */}
                  <div>
                     <h4 className="flex items-center gap-2 font-bold text-slate-800 mb-2">
-                        <Key size={16} className="text-orange-500"/> Cấu hình API (DeepSeek/OpenAI)
+                        <Key size={16} className="text-blue-500"/> Cấu hình API
                     </h4>
                     
                     <div className="space-y-3">
@@ -221,6 +265,14 @@ const App: React.FC = () => {
                         className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:border-purple-500 transition-all text-sm resize-none"
                      />
                  </div>
+
+                 {/* RESET BUTTON MOVED TO BOTTOM */}
+                 <button 
+                    onClick={handleGlobalReset}
+                    className="w-full py-3 bg-white border border-red-200 text-red-600 rounded-xl text-xs font-bold hover:bg-red-50 flex items-center justify-center gap-2"
+                 >
+                     <Trash2 size={14} /> Reset Ứng Dụng (Xóa hết dữ liệu)
+                 </button>
                  
                  <button 
                     onClick={saveSettings}
