@@ -1,0 +1,8 @@
+{
+  "name": "Hóa Học Vui Vẻ - Lớp 9",
+  "description": "Ứng dụng học Hóa học lớp 9 thú vị dành cho học sinh Việt Nam. Học bảng hóa trị, lắp ghép công thức và đố vui cùng AI.",
+  "requestFramePermissions": [
+    "microphone",
+    "camera"
+  ]
+}
