@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { OrganicCompound, OrganicReaction, QuizQuestion } from '../types';
 import { DB } from '../utils/db';
 import { generateOrganicPractice, toSubscript } from '../services/geminiService';
-import { FlaskConical, Flame, RefreshCcw, ArrowRight, Zap, CheckCircle2, XCircle, Beaker, X, TestTube, Plus, Trash2, Save, Edit, BrainCircuit } from 'lucide-react';
+import { FlaskConical, Flame, RefreshCcw, ArrowRight, Zap, CheckCircle2, XCircle, Beaker, X, TestTube, Plus, Trash2, Save, BrainCircuit } from 'lucide-react';
 
 export const OrganicMap: React.FC = () => {
   // --- STATE ---

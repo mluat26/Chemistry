@@ -101,7 +101,7 @@ export const solveHomework = async (question: string, imageBase64?: string): Pro
 
 // --- LOCAL FALLBACKS & QUIZ GENERATION ---
 
-export const generateQuizQuestion = async (topic: string): Promise<QuizQuestion> => {
+export const generateQuizQuestion = async (_topic: string): Promise<QuizQuestion> => {
     // Local Logic (Fast & Offline)
     await new Promise(r => setTimeout(r, 400));
     const item = COMMON_COMPONENTS[Math.floor(Math.random() * COMMON_COMPONENTS.length)];
@@ -178,6 +178,6 @@ export const generateOrganicPractice = async (compoundName: string): Promise<Qui
     }
 };
 
-export const checkFormulaWithAI = async (cation: string, anion: string, userFormula: string): Promise<string> => {
+export const checkFormulaWithAI = async (_cation: string, _anion: string, _userFormula: string): Promise<string> => {
     return "Hãy nhớ quy tắc chéo: Hóa trị chất này là chỉ số chất kia!";
 };

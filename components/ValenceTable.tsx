@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ChemicalComponent, ElementType, Valence } from '../types';
 import { DB } from '../utils/db';
-import { Search, FlaskConical, ChevronDown, Plus, Trash2, Atom, Zap, Leaf, X, BookOpen, Copy, ArrowLeft, Upload, RefreshCw, Scale, Info } from 'lucide-react';
+import { FlaskConical, ChevronDown, Trash2, Atom, Zap, X, BookOpen, Copy, ArrowLeft, Upload, RefreshCw, Scale, Info } from 'lucide-react';
 
 export const ValenceTable: React.FC = () => {
   const [input, setInput] = useState('');
