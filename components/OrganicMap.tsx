@@ -477,14 +477,14 @@ export const OrganicMap: React.FC = () => {
       )
   }
 
-  // FIXED FONT SIZE for Short formulas like Al, C
+  // FIXED FONT SIZE for Short formulas
   const getCircleFontSize = (text: string) => {
-      const len = text.length; // Count total length including numbers
-      if (len > 8) return "text-sm"; 
-      if (len > 6) return "text-base";
-      if (len > 4) return "text-xl"; // Fits C6H6, C2H4 better
-      if (len > 2) return "text-2xl"; // C2H2, CH4
-      return "text-4xl"; // Al, C
+      const len = text.length; 
+      if (len > 8) return "text-xs"; 
+      if (len > 6) return "text-sm";
+      if (len >= 4) return "text-xl"; // C2H4 (4 chars) -> xl
+      if (len === 3) return "text-2xl"; // CH4 (3 chars) -> 2xl
+      return "text-4xl"; // Al (2 chars), C (1 char)
   };
 
   return (
@@ -543,7 +543,7 @@ export const OrganicMap: React.FC = () => {
                  <Trash2 size={18} />
              </button>
 
-             {/* CIRCLE FIX: Use toSubscript and Bigger Font */}
+             {/* CIRCLE FIX: Use toSubscript and Adaptive Font Size */}
              <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-lg border-4 border-blue-50 mb-3 px-2 text-center overflow-hidden shrink-0">
                  <span className={`font-black text-slate-800 whitespace-nowrap leading-tight text-center ${getCircleFontSize(currentCompound.formula)}`}>
                      {toSubscript(currentCompound.formula)}
