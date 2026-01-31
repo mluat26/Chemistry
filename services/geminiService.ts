@@ -165,7 +165,7 @@ function generateOptions(correct: string, pool: string[]): string[] {
     return options;
 }
 
-export const generateOrganicPractice = async (compoundName: string): Promise<QuizQuestion> => {
+export const generateOrganicPractice = async (_compoundName: string): Promise<QuizQuestion> => {
     // This function was removed from UI but kept in service just in case. 
     // If used, it should also be updated to track usage.
     return {

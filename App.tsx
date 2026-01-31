@@ -5,7 +5,7 @@ import { OrganicMap } from './components/OrganicMap';
 import { AITutor } from './components/AITutor';
 import { DB } from './utils/db';
 import { getUsageStats, UsageStats } from './services/geminiService';
-import { Search, FlaskConical, Bot, Settings, Key, X, Check, MessageSquare, Trash2, HardDrive, Link as LinkIcon, Cpu, Zap, Activity } from 'lucide-react';
+import { Search, FlaskConical, Bot, Settings, Key, X, Check, MessageSquare, Trash2, HardDrive, Link as LinkIcon, Cpu, Activity } from 'lucide-react';
 
 const App: React.FC = () => {
   const [view, setView] = useState<ViewState>('TABLE');
