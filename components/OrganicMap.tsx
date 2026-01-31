@@ -2,7 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { OrganicCompound, OrganicReaction } from '../types';
 import { DB } from '../utils/db';
 import { toSubscript } from '../services/geminiService';
-import { FlaskConical, Flame, RefreshCcw, ArrowRight, Zap, Beaker, X, TestTube, Plus, Trash2, Save } from 'lucide-react';
+import { FlaskConical, Flame, RefreshCcw, ArrowRight, Zap, Beaker, X, TestTube, Plus, Trash2, Save, Edit3 } from 'lucide-react';
+
+const REACTION_TYPES = [
+    'Cháy', 'Thế', 'Cộng', 'Trùng hợp', 'Oxi hóa', 
+    'Este hóa', 'Thủy phân', 'Lên men', 'Xà phòng hóa', 
+    'Tác dụng Axit/Bazơ'
+];
 
 export const OrganicMap: React.FC = () => {
   // --- STATE ---
@@ -117,6 +123,11 @@ export const OrganicMap: React.FC = () => {
       }
   };
 
+  // --- HELPER FOR CUSTOM SELECT ---
+  const currentSelectValue = REACTION_TYPES.includes(newReaction.action as string) 
+      ? newReaction.action 
+      : 'CUSTOM_OPT';
+
   // --- RENDER: ADD FORM ---
   if (isAdding) {
       return (
@@ -187,20 +198,41 @@ export const OrganicMap: React.FC = () => {
                   <div className="bg-blue-50 p-3 rounded-xl border border-blue-100">
                       <h3 className="font-bold text-blue-800 text-sm mb-2">Thêm Phản Ứng Mới (Hiện có: {newCompound.reactions?.length || 0})</h3>
                       <div className="space-y-2">
-                          <select 
-                            className="w-full p-2 rounded border"
-                            value={newReaction.action}
-                            onChange={e => setNewReaction({...newReaction, action: e.target.value as any})}
-                          >
-                              <option>Cháy</option>
-                              <option>Thế</option>
-                              <option>Cộng</option>
-                              <option>Trùng hợp</option>
-                              <option>Oxi hóa</option>
-                              <option>Este hóa</option>
-                              <option>Thủy phân</option>
-                              <option>Khác</option>
-                          </select>
+                          
+                          {/* Custom Select/Input Combo */}
+                          <div>
+                              <label className="text-xs font-bold text-gray-400 uppercase block mb-1">Loại phản ứng</label>
+                              <select 
+                                className="w-full p-2 rounded border mb-2 bg-white"
+                                value={currentSelectValue}
+                                onChange={e => {
+                                    const val = e.target.value;
+                                    if (val === 'CUSTOM_OPT') {
+                                        setNewReaction({...newReaction, action: '' as any});
+                                    } else {
+                                        setNewReaction({...newReaction, action: val as any});
+                                    }
+                                }}
+                              >
+                                  {REACTION_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                                  <option value="CUSTOM_OPT">✎ Nhập tên khác...</option>
+                              </select>
+                              
+                              {/* Show Input if "Other" is selected */}
+                              {currentSelectValue === 'CUSTOM_OPT' && (
+                                  <div className="flex items-center gap-2 animate-fade-in">
+                                      <Edit3 size={16} className="text-blue-500" />
+                                      <input 
+                                          className="flex-1 p-2 rounded border border-blue-300 bg-white text-sm font-bold text-blue-800 placeholder:font-normal"
+                                          placeholder="Gõ tên phản ứng (VD: Tách nước, Cracking...)"
+                                          value={newReaction.action}
+                                          onChange={e => setNewReaction({...newReaction, action: e.target.value as any})}
+                                          autoFocus
+                                      />
+                                  </div>
+                              )}
+                          </div>
+
                           <input 
                               className="w-full p-2 rounded border text-sm" placeholder="Tác nhân (VD: + O2)"
                               value={newReaction.reagent}

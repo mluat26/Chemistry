@@ -116,7 +116,7 @@ export const AITutor: React.FC = () => {
         const lines = content.split('\n');
 
         return (
-            <div className="text-slate-800 text-[15px] leading-relaxed">
+            <div className="text-slate-800 text-sm leading-relaxed">
                 {lines.map((line, lineIdx) => {
                     const trimmed = line.trim();
                     if (!trimmed) return <div key={lineIdx} className="h-2" />;
@@ -125,7 +125,7 @@ export const AITutor: React.FC = () => {
 
                     if (isEquation) {
                          return (
-                            <div key={lineIdx} className="my-3 px-2 py-3 bg-blue-50 border border-blue-100 rounded-xl text-center font-bold text-blue-900 text-lg overflow-x-auto shadow-sm whitespace-nowrap scrollbar-hide">
+                            <div key={lineIdx} className="my-2 px-2 py-2 bg-blue-50 border border-blue-100 rounded-lg text-center font-bold text-blue-900 text-base overflow-x-auto shadow-sm whitespace-nowrap scrollbar-hide max-w-full">
                                 {parseInline(trimmed)}
                             </div>
                         );
@@ -145,7 +145,7 @@ export const AITutor: React.FC = () => {
         <div className="flex flex-col h-[calc(100vh-135px)] animate-fade-in relative bg-white overflow-hidden">
              
              {/* Chat List */}
-             <div className="flex-1 overflow-y-auto px-4 pt-4 pb-36 space-y-6 scroll-smooth bg-white">
+             <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 pt-4 pb-36 space-y-6 scroll-smooth bg-white">
                 {messages.map((msg, idx) => (
                     <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-slide-up items-end group`}>
                         {msg.role === 'ai' && (
@@ -154,7 +154,7 @@ export const AITutor: React.FC = () => {
                              </div>
                         )}
                         
-                        <div className={`relative max-w-[98%] p-4 shadow-sm ${
+                        <div className={`relative max-w-[85%] p-3 shadow-sm ${
                             msg.role === 'user' 
                             ? 'bg-indigo-600 text-white rounded-2xl rounded-br-none' 
                             : 'bg-gray-50 text-slate-800 rounded-2xl rounded-bl-none border border-gray-100'
@@ -165,7 +165,7 @@ export const AITutor: React.FC = () => {
                                 </div>
                             )}
                             
-                            <div className={msg.role === 'user' ? 'text-white' : ''}>
+                            <div className={msg.role === 'user' ? 'text-white text-sm' : ''}>
                                 {msg.role === 'ai' 
                                     ? <SafeHTML content={msg.content} /> 
                                     : msg.content
@@ -256,7 +256,7 @@ export const AITutor: React.FC = () => {
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="Nhập câu hỏi hóa học..."
-                            className="flex-1 bg-transparent outline-none resize-none max-h-24 py-2.5 text-slate-800 placeholder:text-gray-400 text-sm md:text-base leading-relaxed"
+                            className="flex-1 bg-transparent outline-none resize-none max-h-24 py-2.5 text-slate-800 placeholder:text-gray-400 text-sm leading-relaxed"
                             rows={1}
                             onKeyDown={(e) => {
                                 if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
