@@ -482,7 +482,7 @@ export const OrganicMap: React.FC = () => {
       const len = text.length; 
       if (len > 8) return "text-xs"; 
       if (len > 6) return "text-sm";
-      if (len >= 4) return "text-xl"; // C2H4 (4 chars) -> xl
+      if (len >= 4) return "text-xl"; // C2H4 (4 chars) -> xl (safer than 2xl)
       if (len === 3) return "text-2xl"; // CH4 (3 chars) -> 2xl
       return "text-4xl"; // Al (2 chars), C (1 char)
   };
