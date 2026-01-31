@@ -479,11 +479,12 @@ export const OrganicMap: React.FC = () => {
 
   // FIXED FONT SIZE for Short formulas like Al, C
   const getCircleFontSize = (text: string) => {
-      const clean = text.replace(/[^a-zA-Z]/g, ''); // Count letters only roughly
-      if (clean.length > 10) return "text-xs"; // Very long
-      if (clean.length > 5) return "text-base"; // Medium long
-      if (clean.length > 2) return "text-xl"; // Normal
-      return "text-5xl"; // Super big for "Al", "C", "H"
+      const len = text.length; // Count total length including numbers
+      if (len > 8) return "text-sm"; 
+      if (len > 6) return "text-base";
+      if (len > 4) return "text-xl"; // Fits C6H6, C2H4 better
+      if (len > 2) return "text-2xl"; // C2H2, CH4
+      return "text-4xl"; // Al, C
   };
 
   return (
@@ -545,7 +546,7 @@ export const OrganicMap: React.FC = () => {
              {/* CIRCLE FIX: Use toSubscript and Bigger Font */}
              <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-lg border-4 border-blue-50 mb-3 px-2 text-center overflow-hidden shrink-0">
                  <span className={`font-black text-slate-800 whitespace-nowrap leading-tight text-center ${getCircleFontSize(currentCompound.formula)}`}>
-                     {toSubscript(currentCompound.formula.replace(/\(/g, '').replace(/\)/g, ''))}
+                     {toSubscript(currentCompound.formula)}
                  </span>
              </div>
              <h3 className="text-xl font-bold text-blue-900 text-center">{currentCompound.name}</h3>

@@ -1,8 +1,10 @@
 import { QuizQuestion } from '../types';
+import { COMMON_COMPONENTS } from '../constants';
 
 // --- HELPER: FORMAT FORMULA ---
-export const toSubscript = (text: string) => {
-    if (!text) return '';
+export const toSubscript = (text: string | number | undefined | null) => {
+    if (text === undefined || text === null || text === '') return '';
+    const str = String(text);
     
     const subscriptMap: Record<string, string> = {
         '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄',
@@ -10,7 +12,7 @@ export const toSubscript = (text: string) => {
         '+': '⁺', '-': '⁻'
     };
 
-    return text.replace(/([a-zA-Z\)])(\d+)/g, (_, char, numStr) => {
+    return str.replace(/([a-zA-Z\)])(\d+)/g, (_, char, numStr) => {
         const subNums = numStr.split('').map((n: string) => subscriptMap[n] || n).join('');
         return `${char}${subNums}`;
     });
@@ -98,7 +100,6 @@ export const solveHomework = async (question: string, imageBase64?: string): Pro
 };
 
 // --- LOCAL FALLBACKS & QUIZ GENERATION ---
-import { COMMON_COMPONENTS } from '../constants';
 
 export const generateQuizQuestion = async (topic: string): Promise<QuizQuestion> => {
     // Local Logic (Fast & Offline)
@@ -116,7 +117,7 @@ export const generateQuizQuestion = async (topic: string): Promise<QuizQuestion>
     } else {
          return {
             question: `Hóa trị của ${item.name} (${toSubscript(item.symbol)}) là bao nhiêu?`,
-            options: generateOptions(item.valence, ['I', 'II', 'III', 'IV', 'V', 'VI']),
+            options: generateOptions(String(item.valence), ['I', 'II', 'III', 'IV', 'V', 'VI']),
             correctAnswer: 0,
             explanation: `${item.name} thường có hóa trị ${item.valence}.`
         };
@@ -133,7 +134,6 @@ function generateOptions(correct: string, pool: string[]): string[] {
 export const generateOrganicPractice = async (compoundName: string): Promise<QuizQuestion> => {
     const { apiKey, endpoint, model } = getApiConfig();
 
-    // If no key, throw error immediately so app falls back to local mode
     if (!apiKey) throw new Error("No API Key provided");
 
     const prompt = `Tạo 1 câu hỏi trắc nghiệm khách quan (4 lựa chọn) về tính chất hóa học, ứng dụng hoặc điều chế của chất: ${compoundName} (Hóa học lớp 9).
@@ -160,7 +160,6 @@ export const generateOrganicPractice = async (compoundName: string): Promise<Qui
         });
 
         if (!response.ok) {
-            // Throw specific errors to be caught by the component
             if (response.status === 402) throw new Error("Insufficient Balance");
             throw new Error(`API Status ${response.status}`);
         }
@@ -168,14 +167,14 @@ export const generateOrganicPractice = async (compoundName: string): Promise<Qui
         const data = await response.json();
         const content = data.choices?.[0]?.message?.content || "{}";
         
-        // Sanitize JSON string (remove markdown code blocks if AI adds them)
+        // Sanitize JSON string
         const jsonStr = content.replace(/```json/g, '').replace(/```/g, '').trim();
         
         return JSON.parse(jsonStr);
 
     } catch (e) {
         console.error("AI Quiz Gen Error", e);
-        throw e; // Rethrow to trigger local fallback in OrganicMap
+        throw e;
     }
 };
 
